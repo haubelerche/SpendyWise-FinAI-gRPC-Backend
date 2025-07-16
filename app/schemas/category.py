@@ -1,0 +1,1 @@
+# Category-related Pydantic schemas
