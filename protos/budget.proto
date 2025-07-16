@@ -1,0 +1,10 @@
+// Budget service protocol buffer definition
+syntax = "proto3";
+
+package budget;
+
+service BudgetService {
+  // Budget management methods
+}
+
+// Budget messages will be defined here

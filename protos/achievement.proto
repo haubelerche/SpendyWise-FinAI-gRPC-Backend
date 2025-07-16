@@ -1,0 +1,10 @@
+// Achievement service protocol buffer definition
+syntax = "proto3";
+
+package achievement;
+
+service AchievementService {
+  // Achievement management methods
+}
+
+// Achievement messages will be defined here

@@ -1,0 +1,10 @@
+// Financial profile service protocol buffer definition
+syntax = "proto3";
+
+package financial_profile;
+
+service FinancialProfileService {
+  // Financial profile management methods
+}
+
+// Financial profile messages will be defined here

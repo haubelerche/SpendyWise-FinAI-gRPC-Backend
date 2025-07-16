@@ -1,0 +1,10 @@
+// AI Advisor service protocol buffer definition
+syntax = "proto3";
+
+package ai_advisor;
+
+service AIAdvisorService {
+  // AI financial advice methods
+}
+
+// AI advisor messages will be defined here

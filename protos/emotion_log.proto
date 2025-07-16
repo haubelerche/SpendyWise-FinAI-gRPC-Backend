@@ -1,0 +1,10 @@
+// Emotion log service protocol buffer definition
+syntax = "proto3";
+
+package emotion_log;
+
+service EmotionLogService {
+  // Emotion tracking methods for spending psychology
+}
+
+// Emotion log messages will be defined here

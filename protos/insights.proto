@@ -1,0 +1,10 @@
+// Financial insights service protocol buffer definition
+syntax = "proto3";
+
+package insights;
+
+service InsightsService {
+  // Financial insights methods
+}
+
+// Insights messages will be defined here

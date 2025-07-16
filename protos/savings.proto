@@ -1,0 +1,10 @@
+// Savings service protocol buffer definition
+syntax = "proto3";
+
+package savings;
+
+service SavingsService {
+  // Savings management methods
+}
+
+// Savings messages will be defined here
