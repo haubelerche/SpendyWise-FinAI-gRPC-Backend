@@ -1,0 +1,1 @@
+# User tip interaction model

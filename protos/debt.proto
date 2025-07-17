@@ -1,0 +1,10 @@
+// Debt service protocol buffer definition
+syntax = "proto3";
+
+package debt;
+
+service DebtService {
+  // Debt management methods
+}
+
+// Debt messages will be defined here
