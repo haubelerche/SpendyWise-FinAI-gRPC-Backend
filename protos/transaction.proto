@@ -1,0 +1,10 @@
+// Transaction service protocol buffer definition
+syntax = "proto3";
+
+package transaction;
+
+service TransactionService {
+  // Transaction management methods
+}
+
+// Transaction messages will be defined here

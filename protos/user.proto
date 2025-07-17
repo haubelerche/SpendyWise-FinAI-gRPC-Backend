@@ -1,0 +1,10 @@
+// User service protocol buffer definition
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  // User management methods
+}
+
+// User messages will be defined here

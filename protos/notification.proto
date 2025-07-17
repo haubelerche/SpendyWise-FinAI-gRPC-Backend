@@ -1,0 +1,10 @@
+// Notification service protocol buffer definition
+syntax = "proto3";
+
+package notification;
+
+service NotificationService {
+  // Notification management methods
+}
+
+// Notification messages will be defined here

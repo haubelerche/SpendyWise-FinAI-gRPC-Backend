@@ -1,0 +1,10 @@
+// Category service protocol buffer definition
+syntax = "proto3";
+
+package category;
+
+service CategoryService {
+  // Category management methods
+}
+
+// Category messages will be defined here

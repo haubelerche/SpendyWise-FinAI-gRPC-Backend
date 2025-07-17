@@ -1,0 +1,208 @@
+// Mobile-optimized protocol definitions
+// Binary protocol with compression for better mobile performance
+syntax = "proto3";
+
+package mobile;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Mobile Service for device management and optimization
+service MobileService {
+  // Device Registration & Management
+  rpc RegisterDevice(DeviceRegistrationRequest) returns (DeviceRegistrationResponse);
+  rpc UpdateDevice(DeviceUpdateRequest) returns (DeviceResponse);
+  rpc GetDeviceInfo(DeviceInfoRequest) returns (DeviceResponse);
+  rpc UnregisterDevice(DeviceUnregisterRequest) returns (google.protobuf.Empty);
+  
+  // Push Notifications
+  rpc RegisterForPushNotifications(PushTokenRequest) returns (PushTokenResponse);
+  rpc SendNotification(NotificationRequest) returns (NotificationResponse);
+  rpc GetNotificationHistory(NotificationHistoryRequest) returns (NotificationHistoryResponse);
+  
+  // Real-time Streaming (HTTP/2 advantages)
+  rpc StreamFinancialUpdates(StreamRequest) returns (stream FinancialUpdate);
+  rpc StreamNotifications(StreamRequest) returns (stream NotificationUpdate);
+  
+  // Battery & Data Optimization
+  rpc GetSyncData(SyncRequest) returns (SyncResponse);
+  rpc UploadBatch(BatchRequest) returns (BatchResponse);
+  
+  // Connection Health
+  rpc Ping(google.protobuf.Empty) returns (PingResponse);
+  rpc GetServerHealth(google.protobuf.Empty) returns (HealthResponse);
+}
+
+// Device Information
+message DeviceInfo {
+  string device_id = 1;
+  string platform = 2;  // ios, android
+  string app_version = 3;
+  string os_version = 4;
+  string device_model = 5;
+  string timezone = 6;
+  string locale = 7;
+  bool push_enabled = 8;
+  google.protobuf.Timestamp last_active = 9;
+}
+
+// Device Registration
+message DeviceRegistrationRequest {
+  DeviceInfo device_info = 1;
+  string user_token = 2;
+}
+
+message DeviceRegistrationResponse {
+  bool success = 1;
+  string device_token = 2;
+  string message = 3;
+  int64 sync_interval_seconds = 4;
+}
+
+// Device Updates
+message DeviceUpdateRequest {
+  string device_token = 1;
+  DeviceInfo updated_info = 2;
+}
+
+message DeviceResponse {
+  bool success = 1;
+  DeviceInfo device_info = 2;
+  string message = 3;
+}
+
+message DeviceInfoRequest {
+  string device_token = 1;
+}
+
+message DeviceUnregisterRequest {
+  string device_token = 1;
+}
+
+// Push Notifications
+message PushTokenRequest {
+  string device_token = 1;
+  string push_token = 2;  // FCM token for Android, APNs token for iOS
+  string platform = 3;
+}
+
+message PushTokenResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message NotificationRequest {
+  string device_token = 1;
+  string title = 2;
+  string body = 3;
+  map<string, string> data = 4;
+  NotificationPriority priority = 5;
+}
+
+message NotificationResponse {
+  bool success = 1;
+  string notification_id = 2;
+  string message = 3;
+}
+
+enum NotificationPriority {
+  LOW = 0;
+  NORMAL = 1;
+  HIGH = 2;
+  CRITICAL = 3;
+}
+
+// Notification History
+message NotificationHistoryRequest {
+  string device_token = 1;
+  int32 limit = 2;
+  google.protobuf.Timestamp since = 3;
+}
+
+message NotificationHistoryResponse {
+  repeated NotificationRecord notifications = 1;
+  bool has_more = 2;
+}
+
+message NotificationRecord {
+  string notification_id = 1;
+  string title = 2;
+  string body = 3;
+  google.protobuf.Timestamp sent_at = 4;
+  bool delivered = 5;
+  bool read = 6;
+}
+
+// Real-time Streaming
+message StreamRequest {
+  string device_token = 1;
+  repeated string categories = 2;  // transactions, budgets, notifications
+}
+
+message FinancialUpdate {
+  string update_id = 1;
+  string category = 2;  // transaction, budget, saving, etc.
+  string action = 3;    // created, updated, deleted
+  bytes data = 4;       // Compressed binary data
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message NotificationUpdate {
+  NotificationRecord notification = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+// Data Synchronization (Battery Optimization)
+message SyncRequest {
+  string device_token = 1;
+  google.protobuf.Timestamp last_sync = 2;
+  repeated string data_types = 3;  // transactions, budgets, etc.
+  bool compressed = 4;
+}
+
+message SyncResponse {
+  bytes compressed_data = 1;  // Gzipped JSON or protobuf
+  google.protobuf.Timestamp sync_timestamp = 2;
+  int32 total_records = 3;
+  bool more_data_available = 4;
+  string next_page_token = 5;
+}
+
+// Batch Operations (Data Usage Optimization)
+message BatchRequest {
+  string device_token = 1;
+  repeated BatchOperation operations = 2;
+  bool compressed = 3;
+}
+
+message BatchOperation {
+  string operation_id = 1;
+  string type = 2;  // create_transaction, update_budget, etc.
+  bytes data = 3;   // Operation-specific data
+}
+
+message BatchResponse {
+  repeated BatchResult results = 1;
+  int32 processed_count = 2;
+  int32 error_count = 3;
+}
+
+message BatchResult {
+  string operation_id = 1;
+  bool success = 2;
+  string error_message = 3;
+  bytes result_data = 4;
+}
+
+// Health & Monitoring
+message PingResponse {
+  google.protobuf.Timestamp server_time = 1;
+  int64 round_trip_ms = 2;
+}
+
+message HealthResponse {
+  bool healthy = 1;
+  string version = 2;
+  map<string, string> services = 3;  // service -> status
+  google.protobuf.Timestamp timestamp = 4;
+}
