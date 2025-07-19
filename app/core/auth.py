@@ -2,9 +2,9 @@
 import os
 import jwt
 import httpx
+import grpc
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 from datetime import datetime, timezone
 import asyncio
 from functools import lru_cache
@@ -13,9 +13,6 @@ from functools import lru_cache
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://zeywyexydsncslgodffz.supabase.co")
 SUPABASE_PROJECT_ID = SUPABASE_URL.split("//")[1].split(".")[0]  # Extract project ID
 SUPABASE_JWKS_URL = f"{SUPABASE_URL}/auth/v1/keys"
-
-# Security scheme
-security = HTTPBearer()
 
 # Cache for public keys (refresh every hour)
 _jwks_cache = {"keys": None, "expires": 0}
@@ -44,10 +41,7 @@ async def get_supabase_public_keys() -> list:
         # If we have cached keys and fetch fails, use cached keys
         if _jwks_cache["keys"]:
             return _jwks_cache["keys"]
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to fetch authentication keys"
-        )
+        raise Exception(f"Unable to fetch authentication keys: {str(e)}")
 
 
 async def verify_supabase_jwt(token: str) -> Dict[str, Any]:
@@ -68,10 +62,7 @@ async def verify_supabase_jwt(token: str) -> Dict[str, Any]:
                 break
 
         if not public_key:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token: Key not found"
-            )
+            raise Exception("Invalid token: Key not found")
 
         # Verify and decode the token
         payload = jwt.decode(
@@ -85,78 +76,122 @@ async def verify_supabase_jwt(token: str) -> Dict[str, Any]:
         # Check if token is expired
         exp = payload.get("exp")
         if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired"
-            )
+            raise Exception("Token has expired")
 
         return payload
 
     except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired"
-        )
+        raise Exception("Token has expired")
     except jwt.InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(e)}"
-        )
+        raise Exception(f"Invalid token: {str(e)}")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed"
-        )
+        raise Exception(f"Authentication failed: {str(e)}")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """Dependency to get current authenticated user"""
-    token = credentials.credentials
-    payload = await verify_supabase_jwt(token)
-
-    # Extract user information
-    user_info = {
-        "user_id": payload.get("sub"),
-        "email": payload.get("email"),
-        "role": payload.get("role", "authenticated"),
-        "aud": payload.get("aud"),
-        "exp": payload.get("exp"),
-        "iat": payload.get("iat"),
-        "iss": payload.get("iss"),
-        "user_metadata": payload.get("user_metadata", {}),
-        "app_metadata": payload.get("app_metadata", {})
-    }
-
-    return user_info
-
-
-async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[
-    Dict[str, Any]]:
-    """Optional authentication - returns None if no token provided"""
-    if not credentials:
-        return None
-
+async def get_user_from_grpc_context(context) -> Dict[str, Any]:
+    """Extract and verify user from gRPC metadata"""
+    metadata = dict(context.invocation_metadata())
+    auth_header = metadata.get("authorization", "")
+    
+    if not auth_header:
+        raise grpc.RpcError(grpc.StatusCode.UNAUTHENTICATED, "Missing authorization header")
+    
+    if not auth_header.startswith("Bearer "):
+        raise grpc.RpcError(grpc.StatusCode.UNAUTHENTICATED, "Invalid authorization format")
+    
+    token = auth_header.replace("Bearer ", "")
+    
     try:
-        return await get_current_user(credentials)
-    except HTTPException:
-        return None
+        payload = await verify_supabase_jwt(token)
+        
+        return {
+            "user_id": payload.get("sub"),
+            "email": payload.get("email"),
+            "role": payload.get("role", "authenticated"),
+            "user_metadata": payload.get("user_metadata", {}),
+            "app_metadata": payload.get("app_metadata", {}),
+            "aud": payload.get("aud"),
+            "exp": payload.get("exp"),
+            "iat": payload.get("iat")
+        }
+    except Exception as e:
+        raise grpc.RpcError(grpc.StatusCode.UNAUTHENTICATED, str(e))
 
 
-# For role-based access
+def require_auth(func):
+    """Decorator for gRPC methods that require authentication"""
+    async def wrapper(self, request, context):
+        try:
+            current_user = await get_user_from_grpc_context(context)
+            # Add user to context for use in the method
+            context.user = current_user
+            return await func(self, request, context)
+        except grpc.RpcError:
+            raise  # Re-raise gRPC errors
+        except Exception as e:
+            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+            context.set_details(f"Authentication failed: {str(e)}")
+            return None
+    return wrapper
+
+
+def optional_auth(func):
+    """Decorator for gRPC methods with optional authentication"""
+    async def wrapper(self, request, context):
+        try:
+            current_user = await get_user_from_grpc_context(context)
+            context.user = current_user
+        except:
+            context.user = None  # No user if auth fails
+        
+        return await func(self, request, context)
+    return wrapper
+
+
 def require_role(required_role: str):
     """Decorator for role-based access control"""
+    def decorator(func):
+        async def wrapper(self, request, context):
+            try:
+                current_user = await get_user_from_grpc_context(context)
+                user_role = current_user.get("role", "authenticated")
+                
+                if user_role != required_role:
+                    context.set_code(grpc.StatusCode.PERMISSION_DENIED)
+                    context.set_details(f"Insufficient permissions. Required role: {required_role}")
+                    return None
+                
+                context.user = current_user
+                return await func(self, request, context)
+            except grpc.RpcError:
+                raise
+            except Exception as e:
+                context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+                context.set_details(f"Authentication failed: {str(e)}")
+                return None
+        return wrapper
+    return decorator
 
-    def role_checker(current_user: Dict[str, Any] = Depends(get_current_user)):
-        user_role = current_user.get("role", "authenticated")
-        if user_role != required_role:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Insufficient permissions. Required role: {required_role}"
-            )
-        return current_user
 
-    return role_checker
+def require_user_id(func):
+    """Decorator to ensure user_id is available in context"""
+    async def wrapper(self, request, context):
+        current_user = await get_user_from_grpc_context(context)
+        user_id = current_user.get("user_id")
+        
+        if not user_id:
+            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+            context.set_details("User ID not found in token")
+            return None
+        
+        # Add user info to context
+        context.user = current_user
+        context.user_id = user_id
+        
+        return await func(self, request, context)
+    return wrapper
 
 
-# Admin role dependency
-get_admin_user = require_role("service_role")
+# Convenience decorators
+require_admin = require_role("service_role")
+require_authenticated = require_auth
