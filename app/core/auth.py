@@ -9,12 +9,11 @@ from datetime import datetime, timezone
 import asyncio
 from functools import lru_cache
 
-# Get Supabase configuration from environment
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://zeywyexydsncslgodffz.supabase.co")
 SUPABASE_PROJECT_ID = SUPABASE_URL.split("//")[1].split(".")[0]  # Extract project ID
 SUPABASE_JWKS_URL = f"{SUPABASE_URL}/auth/v1/keys"
 
-# Cache for public keys (refresh every hour)
+# Cache public keys(refresh every hour)
 _jwks_cache = {"keys": None, "expires": 0}
 
 
@@ -22,7 +21,7 @@ async def get_supabase_public_keys() -> list:
     """Fetch Supabase public keys with caching"""
     current_time = datetime.now(timezone.utc).timestamp()
 
-    # Check if cache is still valid (1 hour)
+    # Check if cache is still valid(1 hour)
     if _jwks_cache["keys"] and current_time < _jwks_cache["expires"]:
         return _jwks_cache["keys"]
 
