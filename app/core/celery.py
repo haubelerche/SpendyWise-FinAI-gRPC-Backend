@@ -5,9 +5,9 @@ Optimized for mobile backend simplicity
 """
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Callable, Any
-from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Callable, Any 
+from dataclasses import dataclass # crt dataclass for task representation
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Task:
     name: str
     func: Callable
     args: tuple
-    kwargs: dict
+    kwargs: dict 
     status: TaskStatus = TaskStatus.PENDING
     created_at: datetime = None
     started_at: Optional[datetime] = None
@@ -38,7 +38,7 @@ class Task:
     
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(timezone.utc)
 
 
 class SimpleTaskManager:
@@ -112,7 +112,7 @@ class SimpleTaskManager:
         """Execute a single task"""
         try:
             task.status = TaskStatus.RUNNING
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             
             logger.info(f"Executing task {task.id}: {task.name}")
             
@@ -124,14 +124,14 @@ class SimpleTaskManager:
             
             task.result = result
             task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             
             logger.info(f"Task {task.id} completed successfully")
             
         except Exception as e:
             task.status = TaskStatus.FAILED
             task.error = str(e)
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             
             logger.error(f"Task {task.id} failed: {e}")
     
@@ -143,7 +143,7 @@ class SimpleTaskManager:
         **kwargs
     ) -> str:
         """Submit a task for execution"""
-        task_id = f"{name}_{int(datetime.utcnow().timestamp() * 1000)}"
+        task_id = f"{name}_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
         
         task = Task(
             id=task_id,
@@ -165,7 +165,7 @@ class SimpleTaskManager:
     
     async def wait_for_task(self, task_id: str, timeout: float = 30.0) -> Task:
         """Wait for a task to complete"""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         while True:
             task = self.tasks.get(task_id)
@@ -176,7 +176,7 @@ class SimpleTaskManager:
                 return task
             
             # Check timeout
-            elapsed = (datetime.utcnow() - start_time).total_seconds()
+            elapsed = (datetime.now() - start_time).total_seconds()
             if elapsed > timeout:
                 raise TimeoutError(f"Task {task_id} timeout after {timeout}s")
             
@@ -184,7 +184,7 @@ class SimpleTaskManager:
     
     def cleanup_old_tasks(self, older_than_hours: int = 24):
         """Clean up old completed/failed tasks"""
-        cutoff = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff = datetime.now() - timedelta(hours=older_than_hours)
         
         to_remove = []
         for task_id, task in self.tasks.items():
@@ -291,7 +291,7 @@ class SimpleScheduler:
         """Main scheduler loop"""
         while self.running:
             try:
-                current_time = datetime.utcnow()
+                current_time = datetime.now()
                 
                 for task_id, task_info in self.scheduled_tasks.items():
                     if current_time >= task_info["next_run"]:
@@ -329,7 +329,7 @@ class SimpleScheduler:
             "args": args,
             "kwargs": kwargs,
             "interval": timedelta(minutes=interval_minutes),
-            "next_run": datetime.utcnow() + timedelta(minutes=interval_minutes)
+            "next_run": datetime.now() + timedelta(minutes=interval_minutes)
         }
         
         logger.info(f"Scheduled periodic task: {name} (every {interval_minutes} minutes)")
