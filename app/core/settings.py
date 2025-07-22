@@ -6,7 +6,8 @@ Binary protocol with compression and connection reuse
 """
 import os
 from typing import Optional
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -55,10 +56,6 @@ class Settings(BaseSettings):
     # Connection Pool Settings (removing Redis/Celery)
     DB_POOL_SIZE: int = Field(default=20, env="DB_POOL_SIZE")
     DB_MAX_OVERFLOW: int = Field(default=30, env="DB_MAX_OVERFLOW")
-    
-    # Rate Limiting (gRPC interceptors)
-    RATE_LIMIT_ENABLED: bool = Field(default=True, env="RATE_LIMIT_ENABLED")
-    RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(default=100, env="RATE_LIMIT_REQUESTS_PER_MINUTE")
     
     # Mobile Data Optimization
     COMPRESSION_ENABLED: bool = Field(default=True, env="COMPRESSION_ENABLED")

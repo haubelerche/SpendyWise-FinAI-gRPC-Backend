@@ -54,7 +54,6 @@ MAX_SAVINGS_GOAL_AMOUNT = 50_000_000  # 50M VND savings goal
 AI_RESPONSE_MAX_LENGTH = 2000  
 AI_CONFIDENCE_THRESHOLD = 0.7
 MAX_CONVERSATION_HISTORY = 30  
-AI_RATE_LIMIT_PER_HOUR = 200  
 EMOTION_TRACKING_ENABLED = True
 IMPULSE_SPENDING_THRESHOLD = 100_000 
 
@@ -251,24 +250,7 @@ class BudgetPeriod(str, Enum):
     YEARLY = "yearly"
     CUSTOM = "custom"
 
-class BudgetType(str, Enum):
-    CATEGORY_BASED = "category_based"
-    TOTAL_SPENDING = "total_spending"
-    SAVINGS_TARGET = "savings_target"
-    DEBT_PAYOFF = "debt_payoff"
 
-class GoalType(str, Enum):
-    EMERGENCY_FUND = "emergency_fund"
-    DEBT_PAYOFF = "debt_payoff"
-    SAVINGS = "savings"
-    INVESTMENT = "investment"
-    VACATION = "vacation"
-    HOME_PURCHASE = "home_purchase"
-    CAR_PURCHASE = "car_purchase"
-    EDUCATION = "education"
-    RETIREMENT = "retirement"
-    WEDDING = "wedding"
-    OTHER = "other"
 
 class GoalStatus(str, Enum):
     ACTIVE = "active"
@@ -466,12 +448,10 @@ class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
 
 class CacheKeys(str, Enum):
-    USER_SESSION = "user_session"
     USER_PREFERENCES = "user_prefs"
     TRANSACTION_CACHE = "trans_cache"
     BUDGET_CACHE = "budget_cache"
     AI_CONVERSATION = "ai_conv"
-    RATE_LIMIT = "rate_limit"
 
 
 
@@ -554,7 +534,6 @@ class ErrorCode(str, Enum):
     # System Errors
     DATABASE_ERROR = "SYS001"
     EXTERNAL_SERVICE_ERROR = "SYS002"
-    RATE_LIMIT_EXCEEDED = "SYS003"
     SERVICE_UNAVAILABLE = "SYS004"
     TIMEOUT_ERROR = "SYS005"
     
@@ -567,7 +546,6 @@ class ErrorCode(str, Enum):
     # AI & ML Errors
     AI_SERVICE_ERROR = "AI001"
     AI_RESPONSE_INVALID = "AI002"
-    AI_RATE_LIMIT = "AI003"
     AI_MODEL_ERROR = "AI004"
 
 # =============================================================================
@@ -616,15 +594,6 @@ DEFAULT_PAGINATION: Dict[str, int] = {
     "page_size": DEFAULT_PAGE_SIZE,
     "max_page_size": MAX_PAGE_SIZE
 }
-
-# Rate Limiting Configuration
-RATE_LIMITS: Dict[str, Dict[str, int]] = {
-    "authentication": {"requests": 5, "window": 300},  # 5 requests per 5 minutes
-    "transactions": {"requests": 100, "window": 3600},  # 100 requests per hour
-    "ai_chat": {"requests": 50, "window": 3600},  # 50 AI requests per hour
-    "reports": {"requests": 20, "window": 3600},  # 20 report requests per hour
-}
-
 
 
 # Default Financial Advice Topics

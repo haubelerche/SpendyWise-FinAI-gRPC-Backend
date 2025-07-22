@@ -43,8 +43,3 @@ class ServiceUnavailableError(BaseAppException):
     def __init__(self, message: str = "Service unavailable"):
         super().__init__(message, "SERVICE_UNAVAILABLE")
 
-
-class RateLimitError(BaseAppException):
-    """Raised when rate limit is exceeded"""
-    def __init__(self, message: str = "Rate limit exceeded"):
-        super().__init__(message, "RATE_LIMIT_EXCEEDED")
