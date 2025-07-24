@@ -1,9 +1,3 @@
-# Application settings and configuration
-
-"""
-gRPC Server Settings - Optimized for Mobile Clients
-Binary protocol with compression and connection reuse
-"""
 import os
 from typing import Optional
 from pydantic_settings import BaseSettings
@@ -27,10 +21,11 @@ class Settings(BaseSettings):
     TLS_CERT_PATH: Optional[str] = Field(default=None, env="TLS_CERT_PATH")
     TLS_KEY_PATH: Optional[str] = Field(default=None, env="TLS_KEY_PATH")
     
-    # Database Configuration
-    DATABASE_URL: str = Field(env="DATABASE_URL")
+    # Database Configuration (Supabase)
     SUPABASE_URL: str = Field(env="SUPABASE_URL")
-    SUPABASE_KEY: str = Field(env="SUPABASE_KEY")
+    SUPABASE_ANON_KEY: str = Field(env="SUPABASE_ANON_KEY")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(env="SUPABASE_SERVICE_ROLE_KEY")
+    # Removed: DATABASE_URL - using Supabase instead
     
     # Authentication
     SECRET_KEY: str = Field(env="SECRET_KEY")
@@ -42,20 +37,19 @@ class Settings(BaseSettings):
     FCM_SERVER_KEY: Optional[str] = Field(default=None, env="FCM_SERVER_KEY")
     APNS_CERT_PATH: Optional[str] = Field(default=None, env="APNS_CERT_PATH")
     
-    # AI/ML Configuration
+    # AI Configuration for Mobile
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     AI_MODEL: str = Field(default="gpt-3.5-turbo", env="AI_MODEL")
-    
+    #TODO:change the model
+
+
+
     # Logging
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
     LOG_FORMAT: str = Field(
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         env="LOG_FORMAT"
     )
-    
-    # Connection Pool Settings (removing Redis/Celery)
-    DB_POOL_SIZE: int = Field(default=20, env="DB_POOL_SIZE")
-    DB_MAX_OVERFLOW: int = Field(default=30, env="DB_MAX_OVERFLOW")
     
     # Mobile Data Optimization
     COMPRESSION_ENABLED: bool = Field(default=True, env="COMPRESSION_ENABLED")

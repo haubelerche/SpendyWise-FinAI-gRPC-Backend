@@ -1,10 +1,5 @@
 # Logging configuration
 
-"""
-Comprehensive logging configuration for SpendyWise gRPC Backend
-Supports structured logging, financial event tracking, and security auditing
-"""
-
 import logging
 import logging.config
 import sys
