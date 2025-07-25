@@ -2,7 +2,7 @@
 Database base utilities for Supabase
 """
 from typing import Dict, Any, Optional, Union
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import logging
 
@@ -43,9 +43,9 @@ def prepare_record_for_insert(data: Dict[str, Any]) -> Dict[str, Any]:
     if 'id' not in record:
         record['id'] = generate_uuid()
     if 'created_at' not in record:
-        record['created_at'] = datetime.utcnow().isoformat()
+        record['created_at'] = datetime.now(timezone.utc).isoformat()
     if 'updated_at' not in record:
-        record['updated_at'] = datetime.utcnow().isoformat()
+        record['updated_at'] = datetime.now(timezone.utc).isoformat()
     return record
 
 def prepare_record_for_update(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -54,7 +54,7 @@ def prepare_record_for_update(data: Dict[str, Any]) -> Dict[str, Any]:
         raise ValidationError("Data must be a dictionary")
     
     record = data.copy()
-    record['updated_at'] = datetime.utcnow().isoformat()
+    record['updated_at'] = datetime.now(timezone.utc).isoformat()
     # Remove id from updates to prevent conflicts
     record.pop('id', None)
     record.pop('created_at', None)
