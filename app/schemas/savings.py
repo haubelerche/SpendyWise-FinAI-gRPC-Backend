@@ -1,1 +1,0 @@
-# Savings-related Pydantic schemas

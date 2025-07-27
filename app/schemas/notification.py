@@ -1,1 +1,0 @@
-# Notification-related Pydantic schemas

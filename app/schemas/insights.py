@@ -1,1 +1,0 @@
-# Insights-related Pydantic schemas

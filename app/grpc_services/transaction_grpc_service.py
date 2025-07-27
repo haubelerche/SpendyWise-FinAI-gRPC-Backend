@@ -1,1 +1,0 @@
-# Transaction gRPC service implementation
