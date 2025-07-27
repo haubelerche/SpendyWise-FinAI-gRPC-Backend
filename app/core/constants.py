@@ -186,7 +186,7 @@ class RecurrenceFrequency(str, Enum):
     CUSTOM = "custom"
 
 
-class ExpenseCategory(str, Enum):
+class SubCategories(str, Enum):
     FOOD_DINING = "food_dining"
     GROCERIES = "groceries"
     TRANSPORTATION = "transportation"
@@ -219,8 +219,6 @@ class ExpenseCategory(str, Enum):
     TAXES = "taxes"
     GOVERNMENT_FEES = "government_fees"
     OTHER = "other"
-
-class IncomeCategory(str, Enum):
     SALARY = "salary"
     FREELANCE = "freelance"
     BUSINESS_INCOME = "business_income"
@@ -234,7 +232,6 @@ class IncomeCategory(str, Enum):
     REFUND = "refund"
     INSURANCE_CLAIM = "insurance_claim"
     LOAN = "loan"
-    OTHER = "other"
 
 
 class BudgetStatus(str, Enum):
@@ -252,7 +249,7 @@ class BudgetPeriod(str, Enum):
 
 
 
-class GoalStatus(str, Enum):
+class SavingsStatus(str, Enum):
     ACTIVE = "active"
     IN_PROGRESS = "in_progress"
     ACHIEVED = "achieved"
@@ -260,7 +257,7 @@ class GoalStatus(str, Enum):
     CANCELLED = "cancelled"
     OVERDUE = "overdue"
 
-class GoalPriority(str, Enum):
+class SavingsPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
