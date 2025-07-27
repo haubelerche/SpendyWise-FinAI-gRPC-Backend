@@ -1,6 +1,4 @@
-"""
-Database base utilities for Supabase
-"""
+#Database base utilities for Supabase
 from typing import Dict, Any, Optional, Union
 from datetime import datetime, timezone
 import uuid
@@ -9,11 +7,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DatabaseError(Exception):
-    """Base database error"""
     pass
 
 class RecordNotFoundError(DatabaseError):
-    """Record not found in database"""
     pass
 
 class ValidationError(DatabaseError):
