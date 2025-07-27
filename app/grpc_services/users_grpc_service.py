@@ -3,7 +3,7 @@ import grpc
 from typing import Iterator
 import logging
 
-from app.generated import user_pb2, user_pb2_grpc
+from app.generated import users_pb2, users_pb2_grpc
 from app.core.auth import require_auth, optional_auth, require_role, get_current_user_id
 from app.core.exceptions import ValidationError, NotFoundError
 

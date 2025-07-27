@@ -11,8 +11,8 @@ import asyncio
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 
-from app.models.emotion_log import EmotionLog
-from app.schemas.emotion_log import EmotionLogCreate, EmotionLogUpdate
+from app.models.emotion_logs import EmotionLog
+from app.schemas.emotion_logs import EmotionLogCreate, EmotionLogUpdate
 from app.core.constants import EmotionCheckin, EmotionTrigger
 from app.db.session import get_db
 
