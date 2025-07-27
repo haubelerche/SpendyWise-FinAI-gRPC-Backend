@@ -1,41 +1,28 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Dict, Any, Literal
-from datetime import datetime
-from decimal import Decimal
+from typing import Optional, Dict, Any, Literal, List
+from datetime import datetime, timezone
 import uuid
 from app.core.constants import ConversationContext, AIResponseType, AI_RESPONSE_MAX_LENGTH
-
-
-
-
-
+from supabase import Client
+from app.db.supabase_client import get_supabase_client
 
 class AIConversation(BaseModel):
-    """AI conversations table for chat history with financial advisor"""
+    conversation_id: uuid.UUID = Field(..., description="Conversation unique identifier")
+    user_id: uuid.UUID = Field(..., description="User identifier")
+    context: Optional[ConversationContext] = Field(default=None, description="Conversation context")
+    user_message: str = Field(..., min_length=1, max_length=1000, description="User's message")
+    ai_response: str = Field(..., min_length=1, max_length=AI_RESPONSE_MAX_LENGTH, description="AI's response")
+    response_type: Optional[AIResponseType] = Field(default=None, description="Type of AI response")
+    user_rating: Optional[int] = Field(default=None, ge=1, le=5, description="User rating (1-5)")
+    was_helpful: Optional[bool] = Field(default=None, description="Whether response was helpful")
+    confidence_score: Optional[float] = Field(default=None, description="Response confidence")
+    created_at: datetime = Field(..., description="Creation timestamp")
 
-    conversation_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    context = Column(String, default='general', nullable=False)
-    user_message = Column(Text, nullable=False)
-    ai_response = Column(Text, nullable=False)
-    response_type = Column(String, default='advice', nullable=False)
-    
-    # AI metadata (updated with constants thresholds)
-    model_version = Column(Text, default='1.0')
-    confidence_score = Column(DECIMAL(3, 2))
-    processing_time_ms = Column(Integer)
-    
-    # Context data used by AI
-    financial_context = Column(JSON)  # Recent transactions, budgets, goals
-    user_profile_context = Column(JSON)  # User preferences, education level
-    
-    # Feedback
-    user_rating = Column(Integer)
-    was_helpful = Column(Boolean)
-    user_feedback = Column(Text)
-    
-    # Metadata
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat(), 
+            uuid.UUID: str,  
+        }
 
 
 class AIConversationBase(BaseModel):
@@ -48,39 +35,23 @@ class AIConversationBase(BaseModel):
 class AIConversationCreate(AIConversationBase):
     """Schema for creating AI conversations"""
     ai_response: str = Field(..., min_length=1, max_length=AI_RESPONSE_MAX_LENGTH, description="AI's response")
-    model_version: str = Field(default='1.0', description="AI model version")
-    confidence_score: Optional[float] = Field(default=None, ge=0, le=1, description="Response confidence")
-    processing_time_ms: Optional[int] = Field(default=None, ge=0, description="Processing time in milliseconds")
-    financial_context: Optional[Dict[str, Any]] = Field(default=None, description="Financial context data")
-    user_profile_context: Optional[Dict[str, Any]] = Field(default=None, description="User profile context")
 
 
 class AIConversationUpdate(BaseModel):
     """Schema for updating AI conversations (mainly feedback)"""
     user_rating: Optional[int] = Field(default=None, ge=1, le=5, description="User rating (1-5)")
     was_helpful: Optional[bool] = Field(default=None, description="Whether response was helpful")
-    user_feedback: Optional[str] = Field(default=None, max_length=500, description="User feedback text")
 
 
 class AIConversationResponse(AIConversationBase):
     """Schema for AI conversation responses"""
-    conversation_id: UUID = Field(..., description="Conversation unique identifier")
-    user_id: UUID = Field(..., description="User identifier")
+    conversation_id: uuid.UUID = Field(..., description="Conversation unique identifier")
+    user_id: uuid.UUID = Field(..., description="User identifier")
     ai_response: str = Field(..., description="AI's response")
-    model_version: str = Field(..., description="AI model version")
-    confidence_score: Optional[float] = Field(default=None, description="Response confidence")
-    processing_time_ms: Optional[int] = Field(default=None, description="Processing time in milliseconds")
-    financial_context: Optional[Dict[str, Any]] = Field(default=None)
-    user_profile_context: Optional[Dict[str, Any]] = Field(default=None)
     user_rating: Optional[int] = Field(default=None, description="User rating")
     was_helpful: Optional[bool] = Field(default=None, description="Helpfulness feedback")
-    user_feedback: Optional[str] = Field(default=None, description="User feedback")
+    confidence_score: Optional[float] = Field(default=None, description="Response confidence")
     created_at: datetime = Field(..., description="Creation timestamp")
-    has_feedback: bool = Field(..., description="Whether conversation has feedback")
-    is_positive_feedback: bool = Field(..., description="Whether feedback is positive")
-
-    class Config:
-        from_attributes = True
 
 
 class ChatMessage(BaseModel):
@@ -92,12 +63,11 @@ class ChatMessage(BaseModel):
 
 class ChatResponse(BaseModel):
     """Schema for chat response"""
-    conversation_id: UUID = Field(..., description="Conversation identifier")
+    conversation_id: uuid.UUID = Field(..., description="Conversation identifier")
     message: str = Field(..., description="AI response message")
     suggestions: List[str] = Field(default=[], description="Follow-up suggestions")
     context: ConversationContext = Field(..., description="Conversation context")
     confidence_score: Optional[float] = Field(default=None)
-    processing_time_ms: Optional[int] = Field(default=None)
     timestamp: datetime = Field(..., description="Response timestamp")
 
 
@@ -109,7 +79,7 @@ class ConversationSummaryRequest(BaseModel):
 
 class ConversationSummary(BaseModel):
     """Schema for conversation summary"""
-    user_id: UUID = Field(..., description="User identifier")
+    user_id: uuid.UUID = Field(..., description="User identifier")
     summary: str = Field(..., description="Conversation summary")
     key_topics: List[str] = Field(default=[], description="Main topics discussed")
     recommendations_given: List[str] = Field(default=[], description="Recommendations provided")
@@ -124,7 +94,6 @@ class ConversationAnalytics(BaseModel):
     """Schema for conversation analytics"""
     total_conversations: int = Field(..., description="Total number of conversations")
     avg_confidence_score: Optional[float] = Field(default=None)
-    avg_processing_time_ms: Optional[float] = Field(default=None)
     avg_user_rating: Optional[float] = Field(default=None)
     helpfulness_rate: Optional[float] = Field(default=None, description="Percentage of helpful responses")
     most_common_contexts: List[str] = Field(default=[], description="Most common conversation contexts")
@@ -134,15 +103,16 @@ class ConversationAnalytics(BaseModel):
 
 class FeedbackRequest(BaseModel):
     """Schema for providing feedback on AI responses"""
-    conversation_id: UUID = Field(..., description="Conversation to provide feedback for")
+    conversation_id: uuid.UUID = Field(..., description="Conversation to provide feedback for")
     rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating (1-5)")
     was_helpful: Optional[bool] = Field(default=None, description="Whether response was helpful")
     feedback_text: Optional[str] = Field(default=None, max_length=500, description="Additional feedback")
 
-    @field_validator('rating', 'was_helpful')
-    def at_least_one_feedback(cls, v, values):
+    @field_validator('rating', 'was_helpful', 'feedback_text')
+    def at_least_one_feedback(self , v, info):
         """Ensure at least one type of feedback is provided"""
-        if not v and 'rating' not in values and 'was_helpful' not in values:
+        values = info.data
+        if not any([values.get('rating'), values.get('was_helpful'), values.get('feedback_text')]):
             raise ValueError('At least one form of feedback must be provided')
         return v
 
@@ -154,4 +124,30 @@ class ConversationListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
     has_next: bool = Field(..., description="Whether there are more pages")
+
+
+
+
+
+supabase: Client = get_supabase_client()
+def create_conversation(conversation_data: AIConversationCreate, user_id: uuid.UUID):
+    """Create a new conversation in the ai_conversations table."""
+    data = conversation_data.model_dump(exclude_unset=True)
+    data["conversation_id"] = str(uuid.uuid4())
+    data["user_id"] = str(user_id)
+    data["created_at"] =  datetime.now(timezone.utc)
+    return supabase.table("ai_conversations").insert(data).execute()
+
+def get_conversation(conversation_id: uuid.UUID):
+    """Fetch a single conversation by ID."""
+    return supabase.table("ai_conversations").select("*").eq("conversation_id", str(conversation_id)).execute()
+
+def update_conversation_feedback(conversation_id: uuid.UUID, feedback: AIConversationUpdate):
+    """Update feedback for a conversation."""
+    data = feedback.model_dump(exclude_unset=True)
+    return supabase.table("ai_conversations").update(data).eq("conversation_id", str(conversation_id)).execute()
+def extract_and_record_expense(user_message: str, conversation_id: uuid.UUID):
+    expense = {"amount": 50.0, "category": "food", "description": "Lunch"}  # Example parsing
+    # If financial_context were in the table, update it here
+    return supabase.table("ai_conversations").update({"ai_response": f"Recorded expense: {expense}"}).eq("conversation_id", str(conversation_id)).execute()
 
