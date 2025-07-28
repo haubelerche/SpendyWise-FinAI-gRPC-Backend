@@ -26,19 +26,13 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = Field(..., env="SUPABASE_ANON_KEY")  # Bắt buộc
     SUPABASE_SERVICE_ROLE_KEY: str = Field(..., env="SUPABASE_SERVICE_ROLE_KEY")  # Bắt buộc
 
-    # Authentication
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")  # Bắt buộc
-    ALGORITHM: str = Field(default="HS256", env="ALGORITHM")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
 
     # Mobile-specific Settings
-    PUSH_NOTIFICATION_KEY: Optional[str] = Field(default=None, env="PUSH_NOTIFICATION_KEY")
-    FCM_SERVER_KEY: Optional[str] = Field(default=None, env="FCM_SERVER_KEY")
-    APNS_CERT_PATH: Optional[str] = Field(default=None, env="APNS_CERT_PATH")
+    FCM_SERVICE_ACCOUNT_KEY_PATH: Optional[str] = Field(default=None, env="FCM_SERVICE_ACCOUNT_KEY_PATH")
 
     # AI Configuration for Mobile
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
-    AI_MODEL: str = Field(default="grok-3", env="AI_MODEL")  # Đổi sang Grok 3 (giả định)
+    AI_MODEL: str = Field(default="xxxx", env="AI_MODEL")  #TODO: Cập nhật
 
     # Logging
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
@@ -49,7 +43,15 @@ class Settings(BaseSettings):
 
     # Mobile Data Optimization
     COMPRESSION_ENABLED: bool = Field(default=True, env="COMPRESSION_ENABLED")
-    MAX_MESSAGE_SIZE: int = Field(default=4 * 1024 * 1024, env="MAX_MESSAGE_SIZE")  # 4MB
+    MAX_MESSAGE_SIZE: int = Field(default=4 * 1024 * 1024, env="MAX_MESSAGE_SIZE")
+    BINARY_SERIALIZATION: bool = Field(default=True, env="BINARY_SERIALIZATION")
+    HTTP2_CONNECTION_REUSE: bool = Field(default=True, env="HTTP2_CONNECTION_REUSE")
+    KEEP_ALIVE_INTERVAL: int = Field(default=30, env="KEEP_ALIVE_INTERVAL")
+    CONNECTION_TIMEOUT: int = Field(default=10, env="CONNECTION_TIMEOUT")
+    MAX_RESPONSE_SIZE: int = Field(default=1024 * 1024, env="MAX_RESPONSE_SIZE")
+    STREAMING_CHUNK_SIZE: int = Field(default=64 * 1024, env="STREAMING_CHUNK_SIZE")
+    NOTIFICATION_BATCH_SIZE: int = Field(default=100, env="NOTIFICATION_BATCH_SIZE")
+    NOTIFICATION_RETRY_ATTEMPTS: int = Field(default=3, env="NOTIFICATION_RETRY_ATTEMPTS")
 
     # Streaming Configuration
     STREAM_KEEP_ALIVE_SECONDS: int = Field(default=30, env="STREAM_KEEP_ALIVE_SECONDS")
@@ -57,7 +59,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
-        env_file_encoding = "utf-8"  # Đảm bảo encoding
+        env_file_encoding = "utf-8"
         case_sensitive = True
         extra = "ignore"  # Bỏ qua các biến môi trường không được định nghĩa
 
@@ -67,26 +69,13 @@ _settings: Optional[Settings] = None
 
 
 def get_settings() -> Settings:
-    """Get or create settings instance with error handling"""
     global _settings
     if _settings is None:
         try:
-            _settings = Settings(_env_file=os.getenv("ENV_FILE", ".env"))
-            print("Settings loaded successfully:", _settings.dict())
+            _settings = Settings()
+            print("Settings loaded successfully:", _settings.model_dump())
         except ValidationError as e:
             raise RuntimeError(f"Failed to load settings: {e}")
     return _settings
 
 
-# Mobile-specific configurations (có thể tích hợp vào Settings sau)
-class MobileConfig:
-    """Mobile client optimizations"""
-    BINARY_SERIALIZATION = True
-    COMPRESSION_ENABLED = True
-    HTTP2_CONNECTION_REUSE = True
-    KEEP_ALIVE_INTERVAL = 30  # seconds
-    CONNECTION_TIMEOUT = 10  # seconds
-    MAX_RESPONSE_SIZE = 1024 * 1024  # 1MB
-    STREAMING_CHUNK_SIZE = 64 * 1024  # 64KB
-    NOTIFICATION_BATCH_SIZE = 100
-    NOTIFICATION_RETRY_ATTEMPTS = 3
