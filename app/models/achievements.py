@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 import uuid
 from app.core.constants import AchievementType
@@ -11,18 +11,18 @@ supabase: Client = get_supabase_client()
 
 class Achievement(BaseModel):
     """Achievement model representing user achievements."""
-    achievement_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique identifier for the achievement")
-    achievement_type: AchievementType = Field(..., description="Type of achievement")
-    description: str = Field(..., description="Achievement description")
-    category: str = Field(..., description="Achievement category")
-    criteria: Dict[str, Any] = Field(..., description="Criteria for achieving the goal")
-    points: Optional[int] = Field(default=0, description="Points awarded for the achievement")
+    achievement_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    achievement_type: AchievementType = Field(...)
+    description: str = Field(...)
+    category: str = Field(...)
+    criteria: Dict[str, Any] = Field(...)
+    points: Optional[int] = Field(default=0)
     threshold_amount: Optional[Decimal] = Field(default=None, ge=0, description="Threshold amount for achievement")
     threshold_count: Optional[int] = Field(default=None, ge=0, description="Threshold count for achievement")
     threshold_duration: Optional[int] = Field(default=None, ge=0, description="Threshold duration for achievement")
     google_play_achievement_id: Optional[str] = Field(default=None, description="Google Play achievement ID")
     is_locked: Optional[bool] = Field(default=True, description="Whether the achievement is locked")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    created_at: datetime = Field(default=datetime.now(timezone.utc), description="Creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
 
     class Config:
