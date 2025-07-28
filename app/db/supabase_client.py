@@ -55,3 +55,29 @@ def reset_connections():
     global _supabase_client, _supabase_admin_client
     _supabase_client = None
     _supabase_admin_client = None
+
+def login_with_google(redirect_url: str) -> dict:
+    """Initiate Google OAuth login/signup"""
+    client = get_supabase_client()
+    try:
+        response = client.auth.sign_in_with_oauth(
+            provider="google",
+            redirect_to=redirect_url
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Google OAuth login failed: {e}")
+        raise
+
+def login_with_facebook(redirect_url: str) -> dict:
+    """Initiate Facebook OAuth login/signup"""
+    client = get_supabase_client()
+    try:
+        response = client.auth.sign_in_with_oauth(
+            provider="facebook",
+            redirect_to=redirect_url
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Facebook OAuth login failed: {e}")
+        raise
